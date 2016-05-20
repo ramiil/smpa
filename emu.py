@@ -24,6 +24,16 @@ class smpaCPU:
                 for i in range(1, MaxMemorySize):
                         self.ramdata[i] = 0x00
                 ramfile = open('ramfile.bin', 'rb')
+                bootloader = open('bootloader.bin', 'rb')
+
+                writePtr = 0
+
+                while (True):
+                        self.ramdata[writePtr] = bootloader.read(1)
+                        if not self.ramdata[writePtr]:
+                                break
+                        writePtr+=1
+
                 writePtr = UserCodeStartPage
                 while (True):
                         self.ramdata[writePtr] = ramfile.read(1)
@@ -35,13 +45,12 @@ class smpaCPU:
                 return (regfile>>4, regfile&0xF)
 
         def cpuTick(self, fx, ops):
-                print('Tick', self.registers[IPTR])
-                print(ord(fx), ' ', ord(ops))
+                #print('IPTR =', self.registers[IPTR])
+                #print(ord(fx), ' ', ord(ops))
                 regA, regB = self.decodeReg(ord(ops))
                 if (fx==b'\x00'):
                         0+0 # Do nothing
-                        print('No operation')
-                        print(self.registers)
+                        print("DUMP REGS ", self.registers)
                 if (fx==b'\x01'):
                         return self.ramdata[self.registers[regA]*self.registers[regB]]
                 if (fx==b'\x02'):
@@ -61,8 +70,8 @@ class smpaCPU:
                         return not(self.registers[regA])
 
                 if (fx==b'\x09'):
-                        self.registers[IPTR] = 6400+(self.registers[regA]*self.registers[regB])
-                        print('LOL IM DA BUNNY')
+                        self.registers[IPTR] = (self.registers[regA]*256+self.registers[regB])
+                        input()
 
                 if (fx==b'\x0A'):
                         if (self.registers[regA]==self.registers[regB]):
@@ -118,7 +127,7 @@ class smpaCPU:
                         
 def main():
         cpu = smpaCPU()
-        cpu.registers[IPTR] = 6400
+        cpu.registers[IPTR] = 0
         cpu.init()
         while (not cpu.haltSignal):
                 fx = cpu.ramdata[cpu.registers[IPTR]]
